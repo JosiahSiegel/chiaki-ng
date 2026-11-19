@@ -990,7 +990,7 @@ static bool chiaki_pb_encode_zero_encrypted_key(pb_ostream_t *stream, const pb_f
 	return pb_encode_string(stream, data, sizeof(data));
 }
 
-#define LAUNCH_SPEC_JSON_BUF_SIZE 1536 // room for the optional videoStreamSettings block
+#define LAUNCH_SPEC_JSON_BUF_SIZE 1024
 
 static ChiakiErrorCode stream_connection_send_big(ChiakiStreamConnection *stream_connection)
 {
@@ -1007,12 +1007,6 @@ static ChiakiErrorCode stream_connection_send_big(ChiakiStreamConnection *stream
 	launch_spec.max_fps = session->connect_info.video_profile.max_fps;
 	launch_spec.codec = session->connect_info.video_profile.codec;
 	launch_spec.bw_kbps_sent = session->connect_info.video_profile.bitrate;
-	launch_spec.video_encoder_profile = session->connect_info.video_encoder_profile;
-	launch_spec.portal_identity = session->connect_info.launch_spec_portal_identity;
-	CHIAKI_LOGI(stream_connection->log, "Requesting %ux%u@%u, video encoder profile %s%s",
-			launch_spec.width, launch_spec.height, launch_spec.max_fps,
-			launch_spec.video_encoder_profile[0] ? launch_spec.video_encoder_profile : "hw4.1 (default)",
-			launch_spec.portal_identity ? ", as PlayStation Portal with videoStreamSettings" : "");
 
 	union
 	{
@@ -1077,7 +1071,7 @@ static ChiakiErrorCode stream_connection_send_big(ChiakiStreamConnection *stream
 	msg.big_payload.ecdh_sig.arg = &ecdh_sig_buf;
 	msg.big_payload.ecdh_sig.funcs.encode = chiaki_pb_encode_buf;
 
-	uint8_t buf[3072];
+	uint8_t buf[2048];
 	size_t buf_size;
 
 	pb_ostream_t stream = pb_ostream_from_buffer(buf, sizeof(buf));

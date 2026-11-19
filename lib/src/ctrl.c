@@ -1496,28 +1496,13 @@ static ChiakiErrorCode ctrl_connect(ChiakiCtrl *ctrl)
 		CHIAKI_LOGI(session->log, "Ctrl got Server Type: %u", (unsigned int)server_type);
 		if(server_type == 0
 				&& session->connect_info.video_profile_auto_downgrade
-				&& session->connect_info.video_profile.height >= 1080)
+				&& session->connect_info.video_profile.height == 1080)
 		{
 			// regular PS4 doesn't support >= 1080p
-			CHIAKI_LOGI(session->log, "%up was selected but server would not support it. Downgrading to 720p.",
-					(unsigned int)session->connect_info.video_profile.height);
+			CHIAKI_LOGI(session->log, "1080p was selected but server would not support it. Downgrading.");
 			chiaki_connect_video_profile_preset(
 				&session->connect_info.video_profile,
 				CHIAKI_VIDEO_RESOLUTION_PRESET_720p,
-				session->connect_info.video_profile.max_fps == 60
-					? CHIAKI_VIDEO_FPS_PRESET_60
-					: CHIAKI_VIDEO_FPS_PRESET_30);
-		}
-		else if(server_type == 1
-				&& session->connect_info.video_profile_auto_downgrade
-				&& session->connect_info.video_profile.height > 1080)
-		{
-			// PS4 Pro tops out at 1080p
-			CHIAKI_LOGI(session->log, "%up was selected but server would not support it. Downgrading to 1080p.",
-					(unsigned int)session->connect_info.video_profile.height);
-			chiaki_connect_video_profile_preset(
-				&session->connect_info.video_profile,
-				CHIAKI_VIDEO_RESOLUTION_PRESET_1080p,
 				session->connect_info.video_profile.max_fps == 60
 					? CHIAKI_VIDEO_FPS_PRESET_60
 					: CHIAKI_VIDEO_FPS_PRESET_30);

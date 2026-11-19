@@ -81,8 +81,6 @@
     <string name="preferences_resolution_title_540p">540p</string>
     <string name="preferences_resolution_title_720p">720p</string>
     <string name="preferences_resolution_title_1080p">1080p</string>
-    <string name="preferences_resolution_title_1440p">1440p (PS5, experimental)</string>
-    <string name="preferences_resolution_title_2160p">2160p (PS5, experimental)</string>
     <string name="preferences_fps_title_30">30</string>
     <string name="preferences_fps_title_60">60</string>
     <string name="preferences_bitrate_auto">Auto (%d)</string>

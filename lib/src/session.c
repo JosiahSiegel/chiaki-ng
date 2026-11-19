@@ -114,16 +114,6 @@ CHIAKI_EXPORT void chiaki_connect_video_profile_preset(ChiakiConnectVideoProfile
 			profile->height = 1080;
 			profile->bitrate = 15000;
 			break;
-		case CHIAKI_VIDEO_RESOLUTION_PRESET_1440p:
-			profile->width = 2560;
-			profile->height = 1440;
-			profile->bitrate = 27000; // 1080p's rate scaled by the pixel count (~1.78x)
-			break;
-		case CHIAKI_VIDEO_RESOLUTION_PRESET_2160p:
-			profile->width = 3840;
-			profile->height = 2160;
-			profile->bitrate = 50000; // below a linear 4x of 1080p; H.265 scales better than that
-			break;
 		default:
 			profile->width = 0;
 			profile->height = 0;
@@ -274,10 +264,6 @@ CHIAKI_EXPORT ChiakiErrorCode chiaki_session_init(ChiakiSession *session, Chiaki
 	session->connect_info.enable_keyboard = connect_info->enable_keyboard;
 	session->connect_info.enable_dualsense = connect_info->enable_dualsense;
 	session->connect_info.enable_idr_on_fec_failure = connect_info->enable_idr_on_fec_failure;
-	memcpy(session->connect_info.video_encoder_profile, connect_info->video_encoder_profile,
-			sizeof(session->connect_info.video_encoder_profile));
-	session->connect_info.video_encoder_profile[sizeof(session->connect_info.video_encoder_profile) - 1] = '\0';
-	session->connect_info.launch_spec_portal_identity = connect_info->launch_spec_portal_identity;
 
 	return CHIAKI_ERR_SUCCESS;
 

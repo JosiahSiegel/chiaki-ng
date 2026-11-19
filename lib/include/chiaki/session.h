@@ -59,9 +59,7 @@ typedef enum {
 	CHIAKI_VIDEO_RESOLUTION_PRESET_360p = 1,
 	CHIAKI_VIDEO_RESOLUTION_PRESET_540p = 2,
 	CHIAKI_VIDEO_RESOLUTION_PRESET_720p = 3,
-	CHIAKI_VIDEO_RESOLUTION_PRESET_1080p = 4,
-	CHIAKI_VIDEO_RESOLUTION_PRESET_1440p = 5, // experimental, PS5 only; the console may refuse it
-	CHIAKI_VIDEO_RESOLUTION_PRESET_2160p = 6 // experimental, PS5 only; the console may refuse it
+	CHIAKI_VIDEO_RESOLUTION_PRESET_1080p = 4
 } ChiakiVideoResolutionPreset;
 
 typedef enum {
@@ -91,12 +89,6 @@ typedef struct chiaki_connect_info_t
 	uint8_t psn_account_id[CHIAKI_PSN_ACCOUNT_ID_SIZE];
 	double packet_loss_max;
 	bool enable_idr_on_fec_failure;
-	// Decoder profile announced to the console in the launch spec (null terminated).
-	// Empty means the default, "hw4.1".
-	char video_encoder_profile[16];
-	// PS5 only, experimental: identify as a PlayStation Portal in the launch spec and send the
-	// videoStreamSettings block PS Plus cloud clients use for 1440p/2160p.
-	bool launch_spec_portal_identity;
 } ChiakiConnectInfo;
 
 
@@ -235,8 +227,6 @@ typedef struct chiaki_session_t
 		bool enable_dualsense;
 		uint8_t psn_account_id[CHIAKI_PSN_ACCOUNT_ID_SIZE];
 		bool enable_idr_on_fec_failure;
-		char video_encoder_profile[16];
-		bool launch_spec_portal_identity;
 	} connect_info;
 
 	ChiakiTarget target;
