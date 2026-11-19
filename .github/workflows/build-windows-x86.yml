@@ -21,6 +21,10 @@ jobs:
       dep_folder: deps
       libplacebo_tag: v7.387.0
       sdl2_compat_tag: 2.32.74
+      # The pinned vcpkg baseline has ports (e.g. json-c) declaring CMake < 3.5,
+      # which CMake 4 rejects unless this policy floor is set.
+      CMAKE_POLICY_VERSION_MINIMUM: '3.5'
+      VCPKG_KEEP_ENV_VARS: CMAKE_POLICY_VERSION_MINIMUM
 
     defaults:
       run:
