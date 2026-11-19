@@ -25,6 +25,10 @@ jobs:
       # which CMake 4 rejects unless this policy floor is set.
       CMAKE_POLICY_VERSION_MINIMUM: '3.5'
       VCPKG_KEEP_ENV_VARS: CMAKE_POLICY_VERSION_MINIMUM
+      # vcpkg's compiled packages are kept in a GitHub Actions cache between runs
+      # (building them from source takes ~25 minutes)
+      VCPKG_BINARY_CACHE_DIR: ${{ github.workspace }}\vcpkg-binary-cache
+      VCPKG_BINARY_SOURCES: clear;files,${{ github.workspace }}\vcpkg-binary-cache,readwrite
 
     defaults:
       run:
@@ -39,14 +43,35 @@ jobs:
         run: |
           echo "VCPKG_INSTALLED_DIR=${{ github.workspace }}\build\vcpkg_installed" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
+      - name: Find Vulkan SDK version
+        id: vulkan
+        run: |
+          $ver = (Invoke-WebRequest -UseBasicParsing -Uri "https://vulkan.lunarg.com/sdk/latest.json" | ConvertFrom-Json).windows
+          echo "Version $ver"
+          echo "version=$ver" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+
+      - name: Restore Vulkan SDK
+        id: vulkan-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: C:\VulkanSDK
+          key: vulkansdk-windows-${{ steps.vulkan.outputs.version }}
+
       - name: Setup Vulkan
+        if: steps.vulkan-cache.outputs.cache-hit != 'true'
         run: |
           $ProgressPreference = 'SilentlyContinue'
-          $ver = (Invoke-WebRequest -UseBasicParsing -Uri "https://vulkan.lunarg.com/sdk/latest.json" | ConvertFrom-Json).windows
-          echo Version $ver
+          $ver = "${{ steps.vulkan.outputs.version }}"
           Invoke-WebRequest -UseBasicParsing -Uri "https://sdk.lunarg.com/sdk/download/$ver/windows/vulkansdk-windows-X64-$ver.exe" -OutFile VulkanSDK.exe
           echo Downloaded
           .\VulkanSDK.exe --root ${{ env.VULKAN_SDK }}  --accept-licenses --default-answer --confirm-command install
+
+      - name: Save Vulkan SDK
+        if: steps.vulkan-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: C:\VulkanSDK
+          key: vulkansdk-windows-${{ steps.vulkan.outputs.version }}
 
       - name: Set up Ninja
         run: choco install ninja
@@ -66,6 +91,7 @@ jobs:
           host: 'windows'
           target: 'desktop'
           modules: 'qtwebengine qtpositioning qtwebchannel qtwebsockets qtserialport'
+          cache: true
 
       - name: Install pip dependencies
         run: |
@@ -129,12 +155,32 @@ jobs:
         run: |
           mkdir build
 
+      - name: Restore vcpkg binary cache
+        id: vcpkg-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ env.VCPKG_BINARY_CACHE_DIR }}
+          key: vcpkg-bin-${{ env.triplet }}-${{ env.vcpkg_baseline }}-${{ hashFiles('vcpkg.json') }}
+          restore-keys: |
+            vcpkg-bin-${{ env.triplet }}-${{ env.vcpkg_baseline }}-
+            vcpkg-bin-${{ env.triplet }}-
+
+      - name: Make vcpkg binary cache directory
+        run: New-Item -ItemType Directory -Force "${{ env.VCPKG_BINARY_CACHE_DIR }}" | Out-Null
+
       - name: Setup vcpkg
         uses: lukka/run-vcpkg@v11
         with:
           vcpkgGitCommitId: ${{ env.vcpkg_baseline }}
           runVcpkgInstall: true
           vcpkgJsonGlob: "vcpkg.json"
+
+      - name: Save vcpkg binary cache
+        if: steps.vcpkg-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ env.VCPKG_BINARY_CACHE_DIR }}
+          key: vcpkg-bin-${{ env.triplet }}-${{ env.vcpkg_baseline }}-${{ hashFiles('vcpkg.json') }}
 
       - name: Build libplacebo
         run: |
