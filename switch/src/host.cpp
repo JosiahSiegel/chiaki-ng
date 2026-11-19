@@ -340,6 +340,10 @@ bool Host::GetVideoResolution(int *ret_width, int *ret_height)
 			*ret_width = 2560;
 			*ret_height = 1440;
 			break;
+		case CHIAKI_VIDEO_RESOLUTION_PRESET_2160p:
+			*ret_width = 3840;
+			*ret_height = 2160;
+			break;
 		default:
 			return false;
 	}

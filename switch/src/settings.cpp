@@ -270,6 +270,8 @@ std::string Settings::ResolutionPresetToString(ChiakiVideoResolutionPreset resol
 			return "1080p";
 		case CHIAKI_VIDEO_RESOLUTION_PRESET_1440p:
 			return "1440p";
+		case CHIAKI_VIDEO_RESOLUTION_PRESET_2160p:
+			return "2160p";
 	}
 	return "UNKNOWN";
 }
@@ -288,6 +290,8 @@ int Settings::ResolutionPresetToInt(ChiakiVideoResolutionPreset resolution)
 			return 1080;
 		case CHIAKI_VIDEO_RESOLUTION_PRESET_1440p:
 			return 1440;
+		case CHIAKI_VIDEO_RESOLUTION_PRESET_2160p:
+			return 2160;
 	}
 	return 0;
 }

@@ -1226,8 +1226,12 @@ void QmlBackend::createSession(const StreamSessionConnectInfo &connect_info)
                 CHIAKI_VIDEO_RESOLUTION_PRESET_1080p,
                 requested.max_fps == 30 ? CHIAKI_VIDEO_FPS_PRESET_30 : CHIAKI_VIDEO_FPS_PRESET_60);
             retry_info.video_profile.codec = requested.codec;
-            // Keep a custom bitrate, but drop the 1440p default to the 1080p default.
-            if (requested.bitrate != 27000)
+            // Keep a custom bitrate, but drop the 1440p/2160p default to the 1080p default.
+            ChiakiConnectVideoProfile high_res_default = {};
+            chiaki_connect_video_profile_preset(&high_res_default,
+                requested.height > 1440 ? CHIAKI_VIDEO_RESOLUTION_PRESET_2160p : CHIAKI_VIDEO_RESOLUTION_PRESET_1440p,
+                CHIAKI_VIDEO_FPS_PRESET_60);
+            if (requested.bitrate != high_res_default.bitrate)
                 retry_info.video_profile.bitrate = requested.bitrate;
         }
         else if (chiaki_quit_reason_is_error(reason)) {

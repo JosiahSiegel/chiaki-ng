@@ -119,6 +119,11 @@ CHIAKI_EXPORT void chiaki_connect_video_profile_preset(ChiakiConnectVideoProfile
 			profile->height = 1440;
 			profile->bitrate = 27000; // 1080p's rate scaled by the pixel count (~1.78x)
 			break;
+		case CHIAKI_VIDEO_RESOLUTION_PRESET_2160p:
+			profile->width = 3840;
+			profile->height = 2160;
+			profile->bitrate = 50000; // below a linear 4x of 1080p; H.265 scales better than that
+			break;
 		default:
 			profile->width = 0;
 			profile->height = 0;

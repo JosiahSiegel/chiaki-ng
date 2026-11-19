@@ -1210,7 +1210,7 @@ DialogView {
                     C.ComboBox {
                         id: resolutionLocalPS5
                         Layout.preferredWidth: 400
-                        model: [qsTr("360p"), qsTr("540p"), qsTr("720p"), qsTr("1080p (Default)"), qsTr("1440p (Experimental)")]
+                        model: [qsTr("360p"), qsTr("540p"), qsTr("720p"), qsTr("1080p (Default)"), qsTr("1440p (Experimental)"), qsTr("2160p (Experimental)")]
                         currentIndex: Chiaki.settings.resolutionLocalPS5 - 1
                         onActivated: (index) => {
                             Chiaki.settings.resolutionLocalPS5 = index + 1
@@ -1231,7 +1231,7 @@ DialogView {
                     C.ComboBox {
                         id: resolutionRemotePS5
                         Layout.preferredWidth: 400
-                        model: [qsTr("360p"), qsTr("540p"), qsTr("720p (Default)"), qsTr("1080p"), qsTr("1440p (Experimental)")]
+                        model: [qsTr("360p"), qsTr("540p"), qsTr("720p (Default)"), qsTr("1080p"), qsTr("1440p (Experimental)"), qsTr("2160p (Experimental)")]
                         currentIndex: Chiaki.settings.resolutionRemotePS5 - 1
                         onActivated: (index) => {
                             Chiaki.settings.resolutionRemotePS5 = index + 1
@@ -1342,6 +1342,7 @@ DialogView {
                             case 3: rate = 10; break; // 720p
                             case 4: rate = 15; break; // 1080p
                             case 5: rate = 27; break; // 1440p
+                            case 6: rate = 50; break; // 2160p
                             }
                             return rate;
                         }
@@ -1375,6 +1376,7 @@ DialogView {
                             case 3: rate = 10; break; // 720p
                             case 4: rate = 15; break; // 1080p
                             case 5: rate = 27; break; // 1440p
+                            case 6: rate = 50; break; // 2160p
                             }
                             return rate;
                         }
@@ -1410,6 +1412,7 @@ DialogView {
                             case 3: rate = 10; break; // 720p
                             case 4: rate = 15; break; // 1080p
                             case 5: rate = 27; break; // 1440p
+                            case 6: rate = 50; break; // 2160p
                             }
                             return rate;
                         }
@@ -1444,6 +1447,7 @@ DialogView {
                             case 3: rate = 10; break; // 720p
                             case 4: rate = 15; break; // 1080p
                             case 5: rate = 27; break; // 1440p
+                            case 6: rate = 50; break; // 2160p
                             }
                             return rate;
                         }

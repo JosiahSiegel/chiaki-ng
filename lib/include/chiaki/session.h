@@ -60,7 +60,8 @@ typedef enum {
 	CHIAKI_VIDEO_RESOLUTION_PRESET_540p = 2,
 	CHIAKI_VIDEO_RESOLUTION_PRESET_720p = 3,
 	CHIAKI_VIDEO_RESOLUTION_PRESET_1080p = 4,
-	CHIAKI_VIDEO_RESOLUTION_PRESET_1440p = 5 // experimental, PS5 only; the console may refuse it
+	CHIAKI_VIDEO_RESOLUTION_PRESET_1440p = 5, // experimental, PS5 only; the console may refuse it
+	CHIAKI_VIDEO_RESOLUTION_PRESET_2160p = 6 // experimental, PS5 only; the console may refuse it
 } ChiakiVideoResolutionPreset;
 
 typedef enum {
