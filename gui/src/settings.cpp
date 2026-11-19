@@ -1307,6 +1307,26 @@ void Settings::SetPlaceboFrameMixer(PlaceboFrameMixer frame_mixer)
 	settings.setValue(frame_mixer_key, placebo_frame_mixer_values[frame_mixer]);
 }
 
+static const QMap<UpscaleSharpening, QString> upscale_sharpening_values = {
+	{ UpscaleSharpening::Off, "off" },
+	{ UpscaleSharpening::Light, "light" },
+	{ UpscaleSharpening::Medium, "medium" },
+	{ UpscaleSharpening::Strong, "strong" }
+};
+
+static const UpscaleSharpening upscale_sharpening_default = UpscaleSharpening::Light;
+
+UpscaleSharpening Settings::GetUpscaleSharpening() const
+{
+	auto v = settings.value("settings/upscale_sharpening", upscale_sharpening_values[upscale_sharpening_default]).toString().toLower();
+	return upscale_sharpening_values.key(v, upscale_sharpening_default);
+}
+
+void Settings::SetUpscaleSharpening(UpscaleSharpening sharpening)
+{
+	settings.setValue("settings/upscale_sharpening", upscale_sharpening_values[sharpening]);
+}
+
 bool Settings::GetPlaceboDeinterlaceEnabled() const
 {
 	QString value = placebo_settings.value("placebo_settings/deinterlace", "no").toString().toLower();

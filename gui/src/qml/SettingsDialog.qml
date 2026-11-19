@@ -953,6 +953,25 @@ DialogView {
 
                     Label {
                         Layout.alignment: Qt.AlignRight
+                        text: qsTr("Upscale Sharpening:")
+                    }
+
+                    C.ComboBox {
+                        Layout.preferredWidth: 400
+                        model: [qsTr("Off"), qsTr("Light"), qsTr("Medium"), qsTr("Strong")]
+                        // Applies after the FSRCNNX upscaler (the spatial presets, or Custom with FSRCNNX)
+                        enabled: Chiaki.settings.videoPreset >= 3
+                        currentIndex: Chiaki.settings.upscaleSharpening
+                        onActivated: index => Chiaki.settings.upscaleSharpening = index
+                    }
+
+                    Label {
+                        Layout.alignment: Qt.AlignRight
+                        text: qsTr("(Light)")
+                    }
+
+                    Label {
+                        Layout.alignment: Qt.AlignRight
                         text: qsTr("Frame Delivery:")
                     }
 

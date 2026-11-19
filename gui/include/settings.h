@@ -119,6 +119,14 @@ enum class PlaceboFrameMixer {
 	Cubic
 };
 
+// Sharpening applied after the FSRCNNX spatial upscaler (AMD RCAS)
+enum class UpscaleSharpening {
+	Off,
+	Light,
+	Medium,
+	Strong
+};
+
 enum class PlaceboDeinterlacePreset {
 	Default,
 };
@@ -521,6 +529,9 @@ class Settings : public QObject
 		bool GetDirectFrameMapping() const { return settings.value("settings/direct_frame_mapping", true).toBool(); }
 		void SetDirectFrameMapping(bool enabled) { settings.setValue("settings/direct_frame_mapping", enabled); }
 		void SetPlaceboFrameMixer(PlaceboFrameMixer frame_mixer);
+
+		UpscaleSharpening GetUpscaleSharpening() const;
+		void SetUpscaleSharpening(UpscaleSharpening sharpening);
 
 		bool GetPlaceboDeinterlaceEnabled() const;
 		void SetPlaceboDeinterlaceEnabled(bool enabled);

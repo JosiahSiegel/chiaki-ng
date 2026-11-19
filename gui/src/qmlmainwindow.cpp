@@ -2444,6 +2444,58 @@ static bool uses_fsrcnnx(PlaceboUpscaler upscaler)
 
 static constexpr float spatial_upscale_threshold = 1.2f;
 
+// Sets the RCAS hook's `sharpness` parameter (stops of reduction: 0 is the strongest) for the
+// chosen strength. Returns false when sharpening is off or the parameter can't be set.
+static bool setRcasStrength(const struct pl_hook *hook, UpscaleSharpening sharpening)
+{
+    float stops;
+    switch (sharpening) {
+    case UpscaleSharpening::Light:
+        stops = 1.0f;
+        break;
+    case UpscaleSharpening::Medium:
+        stops = 0.5f;
+        break;
+    case UpscaleSharpening::Strong:
+        stops = 0.2f; // FSR's own RCAS default
+        break;
+    case UpscaleSharpening::Off:
+    default:
+        return false;
+    }
+    for (int i = 0; i < hook->num_parameters; i++) {
+        const struct pl_hook_par &par = hook->parameters[i];
+        if (par.type == PL_VAR_FLOAT && par.data && qstrcmp(par.name, "sharpness") == 0) {
+            par.data->f = stops;
+            return true;
+        }
+    }
+    return false;
+}
+
+// Debanding for the High Quality presets, scaled to how much banding the stream is likely to
+// carry: low-bitrate 8-bit streams band the most, while high-bitrate streams keep fine texture
+// that strong debanding (and its grain) would wash out. 10-bit HDR bands least, and libplacebo
+// warns that grain on HDR can shift brightness a lot, so HDR gets no grain.
+// Fields: iterations, threshold, radius, grain (libplacebo defaults: 1, 3.0, 16.0, 4.0).
+// bitrate_kbps 0 means unknown, which keeps libplacebo's defaults.
+static const struct pl_deband_params *debandParamsForStream(int bitrate_kbps, bool ten_bit)
+{
+    static const struct pl_deband_params strong = { 2, 4.0f, 16.0f, 6.0f, {0.0f, 0.0f, 0.0f} };
+    static const struct pl_deband_params light = { 1, 2.0f, 16.0f, 2.0f, {0.0f, 0.0f, 0.0f} };
+    static const struct pl_deband_params hdr_light = { 1, 2.0f, 16.0f, 0.0f, {0.0f, 0.0f, 0.0f} };
+    static const struct pl_deband_params hdr_low_bitrate = { 1, 3.0f, 16.0f, 0.0f, {0.0f, 0.0f, 0.0f} };
+    if (bitrate_kbps <= 0)
+        return &pl_deband_default_params;
+    if (ten_bit)
+        return bitrate_kbps <= 12000 ? &hdr_low_bitrate : &hdr_light;
+    if (bitrate_kbps <= 12000)
+        return &strong;
+    if (bitrate_kbps > 25000)
+        return &light;
+    return &pl_deband_default_params;
+}
+
 static bool uses_custom_upscale_hook(PlaceboUpscaler upscaler)
 {
     return upscaler == PlaceboUpscaler::FSR || uses_fsrcnnx(upscaler);
@@ -2684,6 +2736,7 @@ QmlMainWindow::~QmlMainWindow()
     pl_mpv_user_shader_destroy(&fsr_hook);
     pl_mpv_user_shader_destroy(&fsrcnnx_hook_8);
     pl_mpv_user_shader_destroy(&fsrcnnx_hook_16);
+    pl_mpv_user_shader_destroy(&rcas_hook);
     if (render_backend == RenderBackend::Vulkan) {
         pl_vulkan_destroy(&placebo_vulkan);
         pl_vk_inst_destroy(&placebo_vk_inst);
@@ -3441,6 +3494,12 @@ void QmlMainWindow::setStreamMaxFPS(unsigned int max_fps)
     const double interval_ms = max_fps > 0 ? 1000.0 / max_fps : 16.6667;
     stream_configured_frame_interval_ms = interval_ms;
     source_frame_interval_ms = interval_ms;
+}
+
+void QmlMainWindow::setStreamVideoQuality(unsigned int bitrate_kbps, bool ten_bit)
+{
+    stream_bitrate_kbps.storeRelaxed(static_cast<int>(bitrate_kbps));
+    stream_ten_bit.storeRelaxed(ten_bit ? 1 : 0);
 }
 
 void QmlMainWindow::resetPlaceboQueue()
@@ -5328,6 +5387,7 @@ renderer_backend_ready:
     this->fsr_hook = load_mpv_hook(placeboGpu(), QStringLiteral(":/shaders/FSR.glsl"));
     this->fsrcnnx_hook_8 = load_mpv_hook(placeboGpu(), QStringLiteral(":/shaders/FSRCNNX_x2_8-0-4-1.glsl"));
     this->fsrcnnx_hook_16 = load_mpv_hook(placeboGpu(), QStringLiteral(":/shaders/FSRCNNX_x2_16-0-4-1.glsl"));
+    this->rcas_hook = load_mpv_hook(placeboGpu(), QStringLiteral(":/shaders/RCAS.glsl"));
 
 
     switch (settings->GetPlaceboPreset()) {
@@ -6733,6 +6793,11 @@ void QmlMainWindow::render()
     }
 
     struct pl_render_params params = *render_params;
+    // Built-in presets deband at a fixed strength; match it to the stream instead. Custom keeps
+    // whatever the user configured.
+    if (video_preset != VideoPreset::Custom && params.deband_params)
+        params.deband_params = debandParamsForStream(stream_bitrate_kbps.loadRelaxed(),
+                                                     stream_ten_bit.loadRelaxed() != 0);
     params.frame_mixer = effectiveFrameMixerConfig(&params);
     const bool content_timed = params.frame_mixer == nullptr;
     const bool mixer_active = params.frame_mixer != nullptr;
@@ -7539,10 +7604,14 @@ void QmlMainWindow::render()
                                                fsr_hook, fsrcnnx_hook_8, fsrcnnx_hook_16);
         }
     }
-    const struct pl_hook *active_hooks[] = {fsrcnnx_hook};
+    // FSR carries its own RCAS pass; after FSRCNNX add RCAS at the output resolution, since the
+    // resample from FSRCNNX's 2x luma down to the window size softens the image
+    const bool sharpen_after_upscale = fsrcnnx_hook && fsrcnnx_hook != fsr_hook && rcas_hook
+        && setRcasStrength(rcas_hook, settings ? settings->GetUpscaleSharpening() : UpscaleSharpening::Off);
+    const struct pl_hook *active_hooks[] = {fsrcnnx_hook, rcas_hook};
     if (fsrcnnx_hook) {
         params.hooks = active_hooks;
-        params.num_hooks = 1;
+        params.num_hooks = sharpen_after_upscale ? 2 : 1;
         switch (video_preset) {
         case VideoPreset::HighQualitySpatial:
             if (fsrcnnx_hook == fsr_hook)

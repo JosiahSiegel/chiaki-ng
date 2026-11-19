@@ -996,6 +996,17 @@ void QmlSettings::setPlaceboFrameMixer(int mixer)
     emit placeboChanged();
 }
 
+int QmlSettings::upscaleSharpening() const
+{
+    return static_cast<int>(settings->GetUpscaleSharpening());
+}
+
+void QmlSettings::setUpscaleSharpening(int sharpening)
+{
+    settings->SetUpscaleSharpening(static_cast<UpscaleSharpening>(sharpening));
+    emit upscaleSharpeningChanged();
+}
+
 bool QmlSettings::placeboDeinterlaceEnabled() const
 {
     return settings->GetPlaceboDeinterlaceEnabled();
@@ -1975,6 +1986,7 @@ void QmlSettings::refreshAllPlaceboKeys()
     emit placeboDownscalerChanged();
     emit placeboPlaneDownscalerChanged();
     emit placeboFrameMixerChanged();
+    emit upscaleSharpeningChanged();
     emit placeboDeinterlaceEnabledChanged();
     emit placeboDeinterlacePresetChanged();
     emit placeboDeinterlaceAlgorithmChanged();

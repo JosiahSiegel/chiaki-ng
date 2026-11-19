@@ -225,6 +225,7 @@ private:
                                  qint64 present_submit_interval_us);
     void drainDeferredSwaps();
     void setStreamMaxFPS(unsigned int max_fps);
+    void setStreamVideoQuality(unsigned int bitrate_kbps, bool ten_bit);
     void createSwapchain();
     void destroySwapchain();
     void resizeSwapchain();
@@ -465,6 +466,11 @@ private:
     const struct pl_hook *fsr_hook = nullptr;
     const struct pl_hook *fsrcnnx_hook_8 = nullptr;
     const struct pl_hook *fsrcnnx_hook_16 = nullptr;
+    // AMD RCAS, run at the output stage after FSRCNNX; its `sharpness` parameter is set per frame
+    const struct pl_hook *rcas_hook = nullptr;
+    // The stream's requested bitrate (kbps) and whether it is 10-bit (HDR); sets debanding strength
+    QAtomicInteger<int> stream_bitrate_kbps = 0;
+    QAtomicInteger<int> stream_ten_bit = 0;
 
     struct {
         PFN_vkGetDeviceProcAddr vkGetDeviceProcAddr;
