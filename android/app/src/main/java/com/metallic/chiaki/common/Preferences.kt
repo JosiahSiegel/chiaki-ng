@@ -25,6 +25,7 @@ class Preferences(context: Context)
 		RES_540P("540p", R.string.preferences_resolution_title_540p, VideoResolutionPreset.RES_540P),
 		RES_720P("720p", R.string.preferences_resolution_title_720p, VideoResolutionPreset.RES_720P),
 		RES_1080P("1080p", R.string.preferences_resolution_title_1080p, VideoResolutionPreset.RES_1080P),
+		RES_1440P("1440p", R.string.preferences_resolution_title_1440p, VideoResolutionPreset.RES_1440P),
 	}
 
 	enum class FPS(val value: String, @StringRes val title: Int, val preset: VideoFPSPreset)

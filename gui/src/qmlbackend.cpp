@@ -1164,7 +1164,28 @@ void QmlBackend::createSession(const StreamSessionConnectInfo &connect_info)
         if (session != session_for_connections)
             return;
 
-        if (chiaki_quit_reason_is_error(reason)) {
+        // 1440p is experimental: the PS5 is reported to refuse stream sizes above 1080p
+        // ("AvCap failed to initialize video"). If that happens, reconnect once at 1080p
+        // instead of showing an error.
+        const bool retry_at_1080p = session_info.video_profile.height > 1080
+            && reason == CHIAKI_QUIT_REASON_STREAM_CONNECTION_REMOTE_DISCONNECTED
+            && (reason_str.contains("AvCap", Qt::CaseInsensitive)
+                || reason_str.contains("did not init", Qt::CaseInsensitive));
+        StreamSessionConnectInfo retry_info;
+        if (retry_at_1080p) {
+            qCWarning(chiakiGui) << "Console refused" << session_info.video_profile.height
+                                 << "p stream (" << reason_str << "), reconnecting at 1080p";
+            retry_info = session_info;
+            const ChiakiConnectVideoProfile requested = session_info.video_profile;
+            chiaki_connect_video_profile_preset(&retry_info.video_profile,
+                CHIAKI_VIDEO_RESOLUTION_PRESET_1080p,
+                requested.max_fps == 30 ? CHIAKI_VIDEO_FPS_PRESET_30 : CHIAKI_VIDEO_FPS_PRESET_60);
+            retry_info.video_profile.codec = requested.codec;
+            // Keep a custom bitrate, but drop the 1440p default to the 1080p default.
+            if (requested.bitrate != 27000)
+                retry_info.video_profile.bitrate = requested.bitrate;
+        }
+        else if (chiaki_quit_reason_is_error(reason)) {
             QString m = tr("Chiaki Session has quit") + ":\n" + chiaki_quit_reason_string(reason);
             if (!reason_str.isEmpty())
                 m += "\n" + tr("Reason") + ": \"" + reason_str + "\"";
@@ -1186,6 +1207,10 @@ void QmlBackend::createSession(const StreamSessionConnectInfo &connect_info)
 
         sleep_inhibit->release();
         setDiscoveryEnabled(true);
+        if (retry_at_1080p) {
+            QTimer::singleShot(0, this, [this, retry_info]() { createSession(retry_info); });
+            return;
+        }
 #ifdef Q_OS_WINDOWS
         qCInfo(chiakiGui) << "Checking sleep state: ";
         if(windows_wake_sleep->getWakeState() == WindowsWakeState::Awake)

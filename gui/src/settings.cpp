@@ -451,7 +451,8 @@ static const QMap<ChiakiVideoResolutionPreset, QString> resolutions = {
 	{ CHIAKI_VIDEO_RESOLUTION_PRESET_360p, "360p" },
 	{ CHIAKI_VIDEO_RESOLUTION_PRESET_540p, "540p" },
 	{ CHIAKI_VIDEO_RESOLUTION_PRESET_720p, "720p" },
-	{ CHIAKI_VIDEO_RESOLUTION_PRESET_1080p, "1080p" }
+	{ CHIAKI_VIDEO_RESOLUTION_PRESET_1080p, "1080p" },
+	{ CHIAKI_VIDEO_RESOLUTION_PRESET_1440p, "1440p" }
 };
 
 static const ChiakiVideoResolutionPreset resolution_default_ps4 = CHIAKI_VIDEO_RESOLUTION_PRESET_720p;
