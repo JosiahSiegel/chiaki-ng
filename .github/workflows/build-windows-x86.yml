@@ -2,6 +2,8 @@ name: Build chiaki-ng Windows x86_64 (VC)
 
 on:
   workflow_dispatch:
+  push:
+    branches: [ 'feat/1440p-experimental' ]
 
 permissions:
   contents: read
