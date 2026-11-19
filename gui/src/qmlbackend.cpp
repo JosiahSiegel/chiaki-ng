@@ -970,6 +970,10 @@ void QmlBackend::createSession(const StreamSessionConnectInfo &connect_info)
     }
 
     session_info = connect_info;
+    // Above 1080p the default "hw4.1" profile is known to be refused; start at "hw5.0"
+    // (see the high-res retry sequence in the SessionQuit handler)
+    if (session_info.video_profile.height > 1080 && session_info.video_encoder_profile.isEmpty())
+        session_info.video_encoder_profile = QStringLiteral("hw5.0");
     window->setStreamMaxFPS(connect_info.video_profile.max_fps);
     disable_zero_copy = !settings->GetUseZeroCopy();
     {
@@ -1166,32 +1170,57 @@ void QmlBackend::createSession(const StreamSessionConnectInfo &connect_info)
 
         // 1440p is experimental: the PS5 refuses stream sizes above 1080p when the client
         // announces the default "hw4.1" decoder profile ("AvCap failed to initialize video").
-        // Level 4.1 tops out at 1080p, so try higher profile names first, then reconnect at
-        // 1080p instead of showing an error.
-        static const QStringList high_res_profiles = { "hw5.1", "hw5.0", "hw5.2" };
+        // Level 4.1 tops out at 1080p. PS Plus cloud clients ask for 1440p/2160p with "hw5.0",
+        // identifying as a PlayStation Portal with a videoStreamSettings block, so try those
+        // variants in turn, then reconnect at 1080p instead of showing an error.
+        struct HighResAttempt { const char *profile; bool portal; };
+        static const HighResAttempt high_res_attempts[] = {
+            { "hw5.0", false },
+            { "hw5.0", true },
+            { "hw5.1", false },
+        };
+        static const int high_res_attempt_count = int(sizeof(high_res_attempts) / sizeof(high_res_attempts[0]));
+        auto describe_attempt = [](const StreamSessionConnectInfo &info) {
+            QString d = info.video_encoder_profile.isEmpty() ? QStringLiteral("hw4.1") : info.video_encoder_profile;
+            if (info.launch_spec_portal_identity)
+                d += QStringLiteral(" as PlayStation Portal");
+            return d;
+        };
+        // A refusal ends the session before the console sends stream info (the "connected"
+        // event), whatever the reason text; a stream that played and then dropped does not count.
         const bool refused_high_res = session_info.video_profile.height > 1080
-            && reason == CHIAKI_QUIT_REASON_STREAM_CONNECTION_REMOTE_DISCONNECTED
-            && (reason_str.contains("AvCap", Qt::CaseInsensitive)
-                || reason_str.contains("Nagare", Qt::CaseInsensitive)
-                || reason_str.contains("did not init", Qt::CaseInsensitive));
-        const int next_profile_index = high_res_profiles.indexOf(session_info.video_encoder_profile) + 1;
-        const bool retry_next_profile = refused_high_res && next_profile_index < high_res_profiles.size();
+            && !session_for_connections->IsConnected()
+            && (reason == CHIAKI_QUIT_REASON_STREAM_CONNECTION_REMOTE_DISCONNECTED
+                || reason == CHIAKI_QUIT_REASON_STREAM_CONNECTION_UNKNOWN);
+        int current_attempt = -1;
+        for (int i = 0; i < high_res_attempt_count; i++) {
+            if (session_info.video_encoder_profile == QLatin1String(high_res_attempts[i].profile)
+                && session_info.launch_spec_portal_identity == high_res_attempts[i].portal) {
+                current_attempt = i;
+                break;
+            }
+        }
+        const int next_attempt = current_attempt + 1;
+        const bool retry_next_profile = refused_high_res && next_attempt < high_res_attempt_count;
         const bool retry_at_1080p = refused_high_res && !retry_next_profile;
         StreamSessionConnectInfo retry_info;
         if (retry_next_profile) {
             retry_info = session_info;
-            retry_info.video_encoder_profile = high_res_profiles.at(next_profile_index);
-            qCWarning(chiakiGui) << "Console refused" << session_info.video_profile.height
-                                 << "p stream with video encoder profile"
-                                 << (session_info.video_encoder_profile.isEmpty() ? QStringLiteral("hw4.1") : session_info.video_encoder_profile)
-                                 << "(" << reason_str << "), retrying with" << retry_info.video_encoder_profile;
+            retry_info.video_encoder_profile = QString::fromLatin1(high_res_attempts[next_attempt].profile);
+            retry_info.launch_spec_portal_identity = high_res_attempts[next_attempt].portal;
+            qCWarning(chiakiGui).noquote() << "Console refused" << QString::number(session_info.video_profile.height) + "p"
+                                 << "with video encoder profile" << describe_attempt(session_info)
+                                 << "(quit reason:" << chiaki_quit_reason_string(reason) << "/" << reason_str << ")"
+                                 << "- retrying with" << describe_attempt(retry_info);
         }
         else if (retry_at_1080p) {
-            qCWarning(chiakiGui) << "Console refused" << session_info.video_profile.height
-                                 << "p stream with every video encoder profile tried ("
-                                 << reason_str << "), reconnecting at 1080p";
+            qCWarning(chiakiGui).noquote() << "Console refused" << QString::number(session_info.video_profile.height) + "p"
+                                 << "with video encoder profile" << describe_attempt(session_info)
+                                 << "(quit reason:" << chiaki_quit_reason_string(reason) << "/" << reason_str << ")"
+                                 << "- every variant tried, reconnecting at 1080p";
             retry_info = session_info;
             retry_info.video_encoder_profile.clear();
+            retry_info.launch_spec_portal_identity = false;
             const ChiakiConnectVideoProfile requested = session_info.video_profile;
             chiaki_connect_video_profile_preset(&retry_info.video_profile,
                 CHIAKI_VIDEO_RESOLUTION_PRESET_1080p,

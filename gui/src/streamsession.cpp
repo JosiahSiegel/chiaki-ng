@@ -480,6 +480,7 @@ StreamSession::StreamSession(const StreamSessionConnectInfo &connect_info, QObje
 	qstrncpy(chiaki_connect_info.video_encoder_profile,
 		connect_info.video_encoder_profile.toLatin1().constData(),
 		sizeof(chiaki_connect_info.video_encoder_profile));
+	chiaki_connect_info.launch_spec_portal_identity = connect_info.launch_spec_portal_identity;
 
 	dpad_touch_shortcut1 = connect_info.dpad_touch_shortcut1;
 	dpad_touch_shortcut2 = connect_info.dpad_touch_shortcut2;

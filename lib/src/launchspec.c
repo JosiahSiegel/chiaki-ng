@@ -42,16 +42,17 @@ static const char launchspec_fmt[] =
 			"\"ps3AccessToken\":\"accessToken\","
 			"\"ps3RefreshToken\":\"refreshToken\""
 		"},\"requestGameSpecification\":{"
-			"\"model\":\"bravia_tv\","
-			"\"platform\":\"android\","
+			"\"model\":\"%s\"," // 6
+			"\"platform\":\"%s\"," // 7
 			"\"audioChannels\":\"5.1\","
 			"\"language\":\"sp\","
 			"\"acceptButton\":\"X\","
 			"\"connectedControllers\":[\"xinput\",\"ds3\",\"ds4\"],"
 			"\"yuvCoefficient\":\"bt601\","
-			"\"videoEncoderProfile\":\"%s\"," // 6
+			"\"videoEncoderProfile\":\"%s\"," // 8
 			"\"audioEncoderProfile\":\"audio1\""
-			"%s" // 7
+			"%s" // 9
+			"%s" // 10
 		"},"
 		"\"userProfile\":{"
 			"\"onlineId\":\"psnId\","
@@ -59,9 +60,22 @@ static const char launchspec_fmt[] =
 			"\"region\":\"US\","
 			"\"languagesUsed\":[\"en\",\"jp\"]"
 		"},"
-		"%s" // 8
-		"%s" // 9
-		"\"handshakeKey\":\"%s\"" // 10
+		"%s" // 11
+		"%s" // 12
+		"\"handshakeKey\":\"%s\"" // 13
+	"}";
+
+// Mirrors the videoStreamSettings block PS Plus cloud clients send when they ask for 1440p/2160p
+// while identifying as a PlayStation Portal. Whether a PS5 reads it for Remote Play is unknown.
+static const char video_stream_settings_fmt[] =
+	",\"videoStreamSettings\":{"
+		"\"clientHeight\":%u,"
+		"\"supportedMaxResolution\":%u,"
+		"\"supportedVideoEncoderProfiles\":[\"hevc_hw4\"],"
+		"\"supportedDynamicRange\":\"%s\","
+		"\"preferredMaxResolution\":%u,"
+		"\"preferredDynamicRange\":\"%s\","
+		"\"hqMode\":1"
 	"}";
 
 CHIAKI_EXPORT int chiaki_launchspec_format(char *buf, size_t buf_size, ChiakiLaunchSpec *launch_spec)
@@ -89,10 +103,23 @@ CHIAKI_EXPORT int chiaki_launchspec_format(char *buf, size_t buf_size, ChiakiLau
 		? launch_spec->video_encoder_profile
 		: "hw4.1";
 
+	const bool portal = launch_spec->portal_identity && chiaki_target_is_ps5(launch_spec->target);
+	char video_stream_settings[320] = "";
+	if(portal)
+	{
+		const char *range = chiaki_codec_is_hdr(launch_spec->codec) ? "hdr" : "sdr";
+		int n = snprintf(video_stream_settings, sizeof(video_stream_settings), video_stream_settings_fmt,
+				launch_spec->height, launch_spec->height, range, launch_spec->height, range);
+		if(n < 0 || (size_t)n >= sizeof(video_stream_settings))
+			return -1;
+	}
+
 	int written = snprintf(buf, buf_size, launchspec_fmt,
 			launch_spec->width, launch_spec->height, launch_spec->max_fps,
 			launch_spec->bw_kbps_sent, launch_spec->mtu, launch_spec->rtt,
-			video_encoder_profile, extras[0], extras[1], extras[2], handshake_key_b64);
+			portal ? "portal" : "bravia_tv", portal ? "qlite" : "android",
+			video_encoder_profile, extras[0], video_stream_settings,
+			extras[1], extras[2], handshake_key_b64);
 	if(written < 0 || written >= buf_size)
 		return -1;
 	return written;

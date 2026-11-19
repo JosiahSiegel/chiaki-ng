@@ -272,6 +272,7 @@ CHIAKI_EXPORT ChiakiErrorCode chiaki_session_init(ChiakiSession *session, Chiaki
 	memcpy(session->connect_info.video_encoder_profile, connect_info->video_encoder_profile,
 			sizeof(session->connect_info.video_encoder_profile));
 	session->connect_info.video_encoder_profile[sizeof(session->connect_info.video_encoder_profile) - 1] = '\0';
+	session->connect_info.launch_spec_portal_identity = connect_info->launch_spec_portal_identity;
 
 	return CHIAKI_ERR_SUCCESS;
 

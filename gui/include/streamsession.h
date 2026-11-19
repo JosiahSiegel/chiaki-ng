@@ -125,6 +125,8 @@ class SdeckHapticsWorker;
 		uint dpad_touch_shortcut4;
 		// Decoder profile announced in the launch spec; empty means the default (hw4.1)
 		QString video_encoder_profile;
+		// Identify as a PlayStation Portal and send videoStreamSettings (experimental, PS5 only)
+		bool launch_spec_portal_identity = false;
 
 	StreamSessionConnectInfo() {}
 	StreamSessionConnectInfo(
