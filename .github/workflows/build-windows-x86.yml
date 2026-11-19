@@ -153,18 +153,27 @@ jobs:
         run: |
           mkdir build
 
+      # vcpkg keys each package on its ABI, which includes the MSVC version. GitHub's Windows
+      # images don't all carry the same MSVC (during an image rollout runs alternate between
+      # two), so the cache accumulates packages: restore the newest entry, and save a new one
+      # whenever this run built packages it didn't have.
       - name: Restore vcpkg binary cache
-        id: vcpkg-cache
         uses: actions/cache/restore@v4
         with:
           path: ${{ env.VCPKG_BINARY_CACHE_DIR }}
-          key: vcpkg-bin-${{ env.triplet }}-${{ env.vcpkg_baseline }}-${{ hashFiles('vcpkg.json') }}
+          key: vcpkg-bin-${{ env.triplet }}-${{ env.vcpkg_baseline }}-${{ hashFiles('vcpkg.json') }}-${{ github.run_id }}
           restore-keys: |
+            vcpkg-bin-${{ env.triplet }}-${{ env.vcpkg_baseline }}-${{ hashFiles('vcpkg.json') }}-
             vcpkg-bin-${{ env.triplet }}-${{ env.vcpkg_baseline }}-
             vcpkg-bin-${{ env.triplet }}-
 
-      - name: Make vcpkg binary cache directory
-        run: New-Item -ItemType Directory -Force "${{ env.VCPKG_BINARY_CACHE_DIR }}" | Out-Null
+      - name: Count cached vcpkg packages
+        id: vcpkg-before
+        run: |
+          New-Item -ItemType Directory -Force "${{ env.VCPKG_BINARY_CACHE_DIR }}" | Out-Null
+          $n = @(Get-ChildItem -Recurse -File -Filter *.zip "${{ env.VCPKG_BINARY_CACHE_DIR }}").Count
+          echo "Cached vcpkg packages before install: $n"
+          echo "count=$n" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
 
       - name: Setup vcpkg
         uses: lukka/run-vcpkg@v11
@@ -173,12 +182,20 @@ jobs:
           runVcpkgInstall: true
           vcpkgJsonGlob: "vcpkg.json"
 
+      - name: Check for new vcpkg packages
+        id: vcpkg-after
+        run: |
+          $n = @(Get-ChildItem -Recurse -File -Filter *.zip "${{ env.VCPKG_BINARY_CACHE_DIR }}").Count
+          echo "Cached vcpkg packages after install: $n (before: ${{ steps.vcpkg-before.outputs.count }})"
+          $grew = if ($n -gt [int]"${{ steps.vcpkg-before.outputs.count }}") { 'true' } else { 'false' }
+          echo "grew=$grew" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+
       - name: Save vcpkg binary cache
-        if: steps.vcpkg-cache.outputs.cache-hit != 'true'
+        if: steps.vcpkg-after.outputs.grew == 'true'
         uses: actions/cache/save@v4
         with:
           path: ${{ env.VCPKG_BINARY_CACHE_DIR }}
-          key: vcpkg-bin-${{ env.triplet }}-${{ env.vcpkg_baseline }}-${{ hashFiles('vcpkg.json') }}
+          key: vcpkg-bin-${{ env.triplet }}-${{ env.vcpkg_baseline }}-${{ hashFiles('vcpkg.json') }}-${{ github.run_id }}
 
       - name: Build libplacebo
         run: |
