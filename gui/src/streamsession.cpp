@@ -477,6 +477,9 @@ StreamSession::StreamSession(const StreamSessionConnectInfo &connect_info, QObje
 	chiaki_connect_info.packet_loss_max = connect_info.packet_loss_max;
 	chiaki_connect_info.auto_regist = connect_info.auto_regist;
 	chiaki_connect_info.audio_video_disabled = connect_info.audio_video_disabled;
+	qstrncpy(chiaki_connect_info.video_encoder_profile,
+		connect_info.video_encoder_profile.toLatin1().constData(),
+		sizeof(chiaki_connect_info.video_encoder_profile));
 
 	dpad_touch_shortcut1 = connect_info.dpad_touch_shortcut1;
 	dpad_touch_shortcut2 = connect_info.dpad_touch_shortcut2;

@@ -49,9 +49,9 @@ static const char launchspec_fmt[] =
 			"\"acceptButton\":\"X\","
 			"\"connectedControllers\":[\"xinput\",\"ds3\",\"ds4\"],"
 			"\"yuvCoefficient\":\"bt601\","
-			"\"videoEncoderProfile\":\"hw4.1\","
-			"\"audioEncoderProfile\":\"audio1\"" // 6
-			"%s"
+			"\"videoEncoderProfile\":\"%s\"," // 6
+			"\"audioEncoderProfile\":\"audio1\""
+			"%s" // 7
 		"},"
 		"\"userProfile\":{"
 			"\"onlineId\":\"psnId\","
@@ -59,9 +59,9 @@ static const char launchspec_fmt[] =
 			"\"region\":\"US\","
 			"\"languagesUsed\":[\"en\",\"jp\"]"
 		"},"
-		"%s" // 7
 		"%s" // 8
-		"\"handshakeKey\":\"%s\"" // 9
+		"%s" // 9
+		"\"handshakeKey\":\"%s\"" // 10
 	"}";
 
 CHIAKI_EXPORT int chiaki_launchspec_format(char *buf, size_t buf_size, ChiakiLaunchSpec *launch_spec)
@@ -85,10 +85,14 @@ CHIAKI_EXPORT int chiaki_launchspec_format(char *buf, size_t buf_size, ChiakiLau
 	else
 		extras[0] = extras[1] = extras[2] = "";
 
+	const char *video_encoder_profile = launch_spec->video_encoder_profile && launch_spec->video_encoder_profile[0]
+		? launch_spec->video_encoder_profile
+		: "hw4.1";
+
 	int written = snprintf(buf, buf_size, launchspec_fmt,
 			launch_spec->width, launch_spec->height, launch_spec->max_fps,
 			launch_spec->bw_kbps_sent, launch_spec->mtu, launch_spec->rtt,
-			extras[0], extras[1], extras[2], handshake_key_b64);
+			video_encoder_profile, extras[0], extras[1], extras[2], handshake_key_b64);
 	if(written < 0 || written >= buf_size)
 		return -1;
 	return written;

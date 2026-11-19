@@ -123,6 +123,8 @@ class SdeckHapticsWorker;
 		uint dpad_touch_shortcut2;
 		uint dpad_touch_shortcut3;
 		uint dpad_touch_shortcut4;
+		// Decoder profile announced in the launch spec; empty means the default (hw4.1)
+		QString video_encoder_profile;
 
 	StreamSessionConnectInfo() {}
 	StreamSessionConnectInfo(

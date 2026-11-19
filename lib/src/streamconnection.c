@@ -1007,6 +1007,10 @@ static ChiakiErrorCode stream_connection_send_big(ChiakiStreamConnection *stream
 	launch_spec.max_fps = session->connect_info.video_profile.max_fps;
 	launch_spec.codec = session->connect_info.video_profile.codec;
 	launch_spec.bw_kbps_sent = session->connect_info.video_profile.bitrate;
+	launch_spec.video_encoder_profile = session->connect_info.video_encoder_profile;
+	CHIAKI_LOGI(stream_connection->log, "Requesting %ux%u@%u, video encoder profile %s",
+			launch_spec.width, launch_spec.height, launch_spec.max_fps,
+			launch_spec.video_encoder_profile[0] ? launch_spec.video_encoder_profile : "hw4.1 (default)");
 
 	union
 	{

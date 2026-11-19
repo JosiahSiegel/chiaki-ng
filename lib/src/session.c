@@ -269,6 +269,9 @@ CHIAKI_EXPORT ChiakiErrorCode chiaki_session_init(ChiakiSession *session, Chiaki
 	session->connect_info.enable_keyboard = connect_info->enable_keyboard;
 	session->connect_info.enable_dualsense = connect_info->enable_dualsense;
 	session->connect_info.enable_idr_on_fec_failure = connect_info->enable_idr_on_fec_failure;
+	memcpy(session->connect_info.video_encoder_profile, connect_info->video_encoder_profile,
+			sizeof(session->connect_info.video_encoder_profile));
+	session->connect_info.video_encoder_profile[sizeof(session->connect_info.video_encoder_profile) - 1] = '\0';
 
 	return CHIAKI_ERR_SUCCESS;
 

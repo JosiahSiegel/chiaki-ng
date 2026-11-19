@@ -28,7 +28,9 @@ SessionLog::SessionLog(StreamSession *session, uint32_t level_mask, const QStrin
 	else
 	{
 		file = new QFile(filename);
-		if(!file->open(QIODevice::ReadWrite))
+		// Append: a reconnect in the same run reuses the file name, and ReadWrite alone would
+		// write over the start of the previous session's log
+		if(!file->open(QIODevice::WriteOnly | QIODevice::Append))
 		{
 			delete file;
 			file = nullptr;

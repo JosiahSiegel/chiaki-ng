@@ -23,6 +23,7 @@ typedef struct chiaki_launch_spec_t
 	unsigned int max_fps;
 	ChiakiCodec codec;
 	unsigned int bw_kbps_sent;
+	const char *video_encoder_profile; // NULL or empty means "hw4.1"
 } ChiakiLaunchSpec;
 
 CHIAKI_EXPORT int chiaki_launchspec_format(char *buf, size_t buf_size, ChiakiLaunchSpec *launch_spec);
